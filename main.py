@@ -1,20 +1,22 @@
-import tensorflow as tf
-import cv2
+import os
 
-from data import YOLODataset
+from yolo.datasets import YOLODataset
+from yolo.callbacks import YOLOLiveView
 from model import model
 
-batch_size = 2
-epochs = 100
-
 if __name__ == '__main__':
-    dataset = YOLODataset()
-    classes, x, y = dataset.flow_from_directory("D:/Dataset/loon_rpn_split")
+    os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
-    model = model(len(classes))
+    batch_size = 2
+    epochs = 500
 
-    def on_batch_end(batch, _logs):
-        pass
+    dataset = YOLODataset(
+        target_size=(128, 512),
+        grid_size=(16, 64))
+    # classes, x, y = dataset.flow_from_directory(directory="D:/Dataset/loon_rpn_split")
+    classes, x, y = dataset.flow_from_directory(directory="D:/Dataset/image/loon_rpn_split")
+
+    model = model(len(classes), learning_rate=1e-4)
 
     model.fit(
         x=x,
@@ -22,4 +24,12 @@ if __name__ == '__main__':
         batch_size=batch_size,
         epochs=epochs,
         validation_split=.2,
-        callbacks=[tf.keras.callbacks.LambdaCallback(on_batch_end=on_batch_end)])
+        callbacks=[
+            YOLOLiveView(
+                x=x,
+                model=model,
+                batch_size=batch_size,
+                step_interval=20,
+                target_size=dataset.target_size,
+                grid_size=dataset.grid_size)
+        ])
