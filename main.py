@@ -14,20 +14,20 @@ if __name__ == '__main__':
         target_size=(128, 512),
         grid_size=(16, 64))
     # classes, x, y = dataset.flow_from_directory(directory="D:/Dataset/loon_rpn_split")
-    classes, x, y = dataset.flow_from_directory(directory="D:/Dataset/image/loon_rpn_split")
+    classes, x_train, y_train, x_test, y_test = dataset.flow_from_directory(directory="D:/Dataset/image/loon_rpn_split")
 
-    model = model(len(classes), learning_rate=1e-4)
+    yolo = model(len(classes), learning_rate=1e-4)
 
-    model.fit(
-        x=x,
-        y=y,
+    yolo.fit(
+        x=x_train,
+        y=y_train,
         batch_size=batch_size,
         epochs=epochs,
         validation_split=.2,
         callbacks=[
             YOLOLiveView(
-                x=x,
-                model=model,
+                x=x_train,
+                model=yolo,
                 batch_size=batch_size,
                 step_interval=20,
                 target_size=dataset.target_size,

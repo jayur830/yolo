@@ -9,7 +9,7 @@ class YOLODataset:
     def __init__(self, target_size: (int, int), grid_size: (int, int)):
         self.target_size, self.grid_size = target_size, grid_size
 
-    def flow_from_directory(self, directory: str):
+    def flow_from_directory(self, directory: str, test_split: float = .2):
         directory = directory.replace("\\", "/")
         if directory[-1] != "/":
             directory += "/"
@@ -33,7 +33,7 @@ class YOLODataset:
         np.random.shuffle(indexes)
         x_data, y_data = x_data[indexes], y_data[indexes]
 
-        return classes, x_data, y_data
+        return classes, x_data[int(x_data.shape[0] * test_split):], y_data[int(y_data.shape[0] * test_split):], x_data[:int(x_data.shape[0] * test_split)], y_data[:int(y_data.shape[0] * test_split)]
 
     def __load(self, path: str, classes_len: int, x_data: [], y_data: []):
         path = path.replace("\\", "/")
