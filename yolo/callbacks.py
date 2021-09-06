@@ -25,7 +25,7 @@ class YOLOLiveView(tf.keras.callbacks.Callback):
         if batch % self.__step_interval == 0:
             img = self.__x[batch * self.__batch_size].copy()
             output = np.asarray(self.__model(img.reshape((1,) + img.shape), training=False))
-            for x1, y1, x2, y2 in YOLODataset.convert(output, self.__target_size, self.__grid_size):
+            for x1, y1, x2, y2 in YOLODataset.convert(output, self.__target_size, self.__grid_size, iou_threshold=.4):
                 img = cv2.rectangle(
                     img=img,
                     pt1=(x1, y1),

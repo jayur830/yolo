@@ -2,8 +2,7 @@ import numpy as np
 import cv2
 
 from glob import glob
-from concurrent.futures import ThreadPoolExecutor
-
+from yolo.utils import nms
 
 class YOLODataset:
     def __init__(self, target_size: (int, int), grid_size: (int, int)):
@@ -69,17 +68,27 @@ class YOLODataset:
         return grid_x, grid_y, x, y, w, h
 
     @staticmethod
-    def convert(tensor, target_size: (int, int), grid_size: (int, int), conf_threshold: float = .25) -> [[int, int, int, int]]:
+    def convert(tensor, target_size: (int, int), grid_size: (int, int), conf_threshold: float = .5, iou_threshold: float = .5) -> [[int, int, int, int]]:
         tensor = 1 / (1 + np.exp(-tensor))
-        bboxes = []
+        bboxes = [[] for _ in range(tensor.shape[-1] % 5)]
         for batch in range(tensor.shape[0]):
             for height in range(tensor.shape[1]):
                 for width in range(tensor.shape[2]):
                     if tensor[batch, height, width, 4] >= conf_threshold:
-                        grid_x, grid_y, x, y, w, h = width, height, tensor[batch, height, width, 0], tensor[batch, height, width, 1], tensor[batch, height, width, 2], tensor[batch, height, width, 3]
+                        grid_x, grid_y, x, y, w, h, conf, class_index = \
+                            width, \
+                            height, \
+                            tensor[batch, height, width, 0], \
+                            tensor[batch, height, width, 1], \
+                            tensor[batch, height, width, 2], \
+                            tensor[batch, height, width, 3], \
+                            tensor[batch, height, width, 4], \
+                            int(np.argmax(tensor[batch, height, width, 5:]))
                         x = target_size[1] * (grid_x + x) / grid_size[1]
                         y = target_size[0] * (grid_y + y) / grid_size[0]
                         w *= target_size[1]
                         h *= target_size[0]
-                        bboxes.append([int(x - w / 2), int(y - h / 2), int(x + w / 2), int(y + h / 2)])
-        return bboxes
+                        bboxes[class_index].append([int(x - w / 2), int(y - h / 2), int(x + w / 2), int(y + h / 2), conf])
+        for i, bbox_class in enumerate(bboxes):
+            bboxes[i] = [_bbox_class[:-1] for _bbox_class in sorted(bbox_class, key=lambda bbox: bbox[4], reverse=True)]
+        return nms(bboxes, iou_threshold)
