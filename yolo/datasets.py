@@ -1,7 +1,11 @@
 import numpy as np
 import cv2
+import os
 
 from glob import glob
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor
+
 from yolo.utils import nms
 
 class YOLODataset:
@@ -18,49 +22,51 @@ class YOLODataset:
             classes = [line.replace("\n", "") for line in reader.readlines()]
 
         # data
-        x_data, y_data = [], []
+        data = []
+        thread_pool_executor = ThreadPoolExecutor(max_workers=16)
 
         y_paths = glob(directory + "*.jpg")
 
-        for _path in y_paths:
-            if "classes" in _path:
-                continue
-            self.__load(_path, len(classes), x_data, y_data)
+        def load(path: str):
+            path = path.replace("\\", "/")
+            label_path = f"{path[:-4]}.txt"
 
-        x_data, y_data = np.asarray(x_data), np.asarray(y_data)
+            if os.path.exists(path) and os.path.exists(label_path):
+                # X
+                img = cv2.resize(
+                    src=cv2.imread(path),
+                    dsize=(self.target_size[1], self.target_size[0]),
+                    interpolation=cv2.INTER_AREA)
+
+                # Y
+                label_tensor = np.zeros(shape=self.grid_size + (5 + len(classes),))
+                with open(label_path, "rt") as reader:
+                    label = [line.replace("\n", "").split(" ") for line in reader.readlines()]
+
+                for l in label:
+                    class_index, x, y, w, h = list(map(float, l))
+                    grid_x, grid_y, x, y, w, h = self.__to_yolo_format(self.grid_size[1], self.grid_size[0], x, y, w, h)
+                    label_tensor[grid_y, grid_x, 0] = x
+                    label_tensor[grid_y, grid_x, 1] = y
+                    label_tensor[grid_y, grid_x, 2] = w
+                    label_tensor[grid_y, grid_x, 3] = h
+                    label_tensor[grid_y, grid_x, 4] = 1.
+                    label_tensor[grid_y, grid_x, 5 + int(class_index)] = 1.
+                data.append([img, label_tensor])
+
+        futures = []
+        for _path in y_paths:
+            futures.append(thread_pool_executor.submit(load, _path))
+        for future in tqdm(futures):
+            future.result()
+
+        data = np.asarray(data, dtype=np.object).transpose()
+        x_data, y_data = data[0], data[1]
         indexes = np.arange(len(x_data))
         np.random.shuffle(indexes)
         x_data, y_data = x_data[indexes], y_data[indexes]
 
         return classes, x_data[int(x_data.shape[0] * test_split):], y_data[int(y_data.shape[0] * test_split):], x_data[:int(x_data.shape[0] * test_split)], y_data[:int(y_data.shape[0] * test_split)]
-
-    def __load(self, path: str, classes_len: int, x_data: [], y_data: []):
-        path = path.replace("\\", "/")
-        label_path = f'{path[:-4]}.txt'
-
-        # X
-        img = cv2.resize(
-            src=cv2.imread(path),
-            dsize=(self.target_size[1], self.target_size[0]),
-            interpolation=cv2.INTER_AREA)
-        x_data.append(img)
-
-        # Y
-        label_tensor = np.zeros(shape=self.grid_size + (5 + classes_len,))
-        with open(label_path, "rt") as reader:
-            label = [line.replace("\n", "").split(" ") for line in reader.readlines()]
-
-        for l in label:
-            class_index, x, y, w, h = list(map(float, l))
-            grid_x, grid_y, x, y, w, h = self.__to_yolo_format(self.grid_size[1], self.grid_size[0], x, y, w, h)
-            label_tensor[grid_y, grid_x, 0] = x
-            label_tensor[grid_y, grid_x, 1] = y
-            label_tensor[grid_y, grid_x, 2] = w
-            label_tensor[grid_y, grid_x, 3] = h
-            label_tensor[grid_y, grid_x, 4] = 1.
-            label_tensor[grid_y, grid_x, 5 + int(class_index)] = 1.
-
-        y_data.append(label_tensor)
 
     def __to_yolo_format(self, grid_width: int, grid_height: int, x: float, y: float, w: float, h: float):
         grid_x, grid_y = int(x * grid_width), int(y * grid_height)
@@ -68,7 +74,7 @@ class YOLODataset:
         return grid_x, grid_y, x, y, w, h
 
     @staticmethod
-    def convert(tensor, target_size: (int, int), grid_size: (int, int), conf_threshold: float = .5, iou_threshold: float = .5) -> [[int, int, int, int]]:
+    def convert(tensor, target_size: (int, int), grid_size: (int, int), conf_threshold: float = .5, iou_threshold: float = .45) -> [[int, int, int, int]]:
         tensor = 1 / (1 + np.exp(-tensor))
         bboxes = [[] for _ in range(tensor.shape[-1] % 5)]
         for batch in range(tensor.shape[0]):

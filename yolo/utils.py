@@ -21,7 +21,7 @@ def iou(a: [int, int, int, int], b: [int, int, int, int]) -> float:
     return intersection_over_union(a, b)
 
 
-def non_max_suppression(bboxes: [[[int, int, int, int]]], iou_threshold: float = .5) -> [[int, int, int, int]]:
+def non_max_suppression(bboxes: [[[int, int, int, int]]], iou_threshold: float = .45) -> [[int, int, int, int]]:
     final_boxes = []
     for bbox_class in bboxes:
         while len(bbox_class) > 0:
@@ -36,5 +36,19 @@ def non_max_suppression(bboxes: [[[int, int, int, int]]], iou_threshold: float =
     return final_boxes
 
 
-def nms(bboxes: [[[int, int, int, int]]], iou_threshold: float = .5) -> [[int, int, int, int]]:
+def nms(bboxes: [[[int, int, int, int]]], iou_threshold: float = .45) -> [[int, int, int, int]]:
     return non_max_suppression(bboxes, iou_threshold)
+
+
+def aaaa(y_true: [[int, int, int, int, int]], y_pred: [[int, int, int, int, int]], iou_threshold: float = .45):
+    tp, fp, tn, fn = 0, 0, 0, 0
+    for y_true_bbox in y_true:
+        for y_pred_bbox in y_pred:
+            _iou = iou(y_true_bbox, y_pred_bbox)
+            if _iou >= iou_threshold:
+                tp += 1
+            elif _iou < iou_threshold:
+                fp += 1
+    return tp, fp, tn, fn
+
+
