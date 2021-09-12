@@ -6,6 +6,7 @@ from yolo.losses import YOLOLoss
 class YOLO(tf.keras.models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.__input_layer, self.__output_layer = args[0], args[1]
 
     def compile(self,
                 optimizer="rmsprop",
