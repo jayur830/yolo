@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 from yolo.models import YOLO
+from yolo.metrics import Recall
 
 
 def model(
@@ -54,9 +55,7 @@ def model(
             momentum=.9,
             nesterov=True),
         loss="sse")
-    # yolo.compile(
-    #     optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
-    #     loss="bce")
+        # metrics=[Recall()])
     yolo.summary()
 
     return yolo

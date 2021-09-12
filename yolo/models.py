@@ -24,13 +24,13 @@ class YOLO(tf.keras.models.Model):
             run_eagerly=run_eagerly,
             **kwargs)
 
-    def call(self, inputs, training=None, mask=None):
-        if training is None or training == True:
-            return inputs
-        elif training == False:
-            return tf.sigmoid(inputs)
-        else:
-            raise TypeError(f"The type of argument 'training' must be bool or None: {training}")
-
-    def __call__(self, *args, **kwargs):
-        return args
+    # def call(self, inputs, training=None, mask=None):
+    #     if training is None or training == True:
+    #         return inputs
+    #     elif training == False:
+    #         return tf.sigmoid(inputs)
+    #     else:
+    #         raise TypeError(f"The type of argument 'training' must be bool or None: {training}")
+    #
+    # def __call__(self, *args, **kwargs):
+    #     return args

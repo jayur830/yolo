@@ -18,21 +18,18 @@ if __name__ == "__main__":
 
     yolo = model(len(classes), learning_rate=1e-4)
 
-    import numpy as np
-    print(np.asarray(yolo(x_train[0].reshape((1,) + x_train[0].shape), training=False)))
-
-    # yolo.fit(
-    #     x=x_train,
-    #     y=y_train,
-    #     batch_size=batch_size,
-    #     epochs=epochs,
-    #     validation_split=.2,
-    #     callbacks=[
-    #         YOLOLiveView(
-    #             x=x_train,
-    #             model=yolo,
-    #             batch_size=batch_size,
-    #             step_interval=40,
-    #             target_size=dataset.target_size,
-    #             grid_size=dataset.grid_size)
-    #     ])
+    yolo.fit(
+        x=x_train,
+        y=y_train,
+        batch_size=batch_size,
+        epochs=epochs,
+        validation_split=.2,
+        callbacks=[
+            YOLOLiveView(
+                x=x_train,
+                model=yolo,
+                batch_size=batch_size,
+                step_interval=40,
+                target_size=dataset.target_size,
+                grid_size=dataset.grid_size)
+        ])
