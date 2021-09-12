@@ -64,9 +64,13 @@ class YOLODataset:
         x_data, y_data = data[0], data[1]
         indexes = np.arange(len(x_data))
         np.random.shuffle(indexes)
-        x_data, y_data = x_data[indexes], y_data[indexes]
+        x_data, y_data = np.asarray([d.astype(np.float) for d in x_data[indexes]]), np.asarray([d.astype(np.float) for d in y_data[indexes]])
 
-        return classes, x_data[int(x_data.shape[0] * test_split):], y_data[int(y_data.shape[0] * test_split):], x_data[:int(x_data.shape[0] * test_split)], y_data[:int(y_data.shape[0] * test_split)]
+        return classes, \
+               x_data[int(x_data.shape[0] * test_split):], \
+               y_data[int(y_data.shape[0] * test_split):], \
+               x_data[:int(x_data.shape[0] * test_split)], \
+               y_data[:int(y_data.shape[0] * test_split)]
 
     def __to_yolo_format(self, grid_width: int, grid_height: int, x: float, y: float, w: float, h: float):
         grid_x, grid_y = int(x * grid_width), int(y * grid_height)

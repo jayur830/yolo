@@ -6,6 +6,7 @@ from yolo.losses import YOLOLoss
 class YOLO(tf.keras.models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.__input_layer, self.__output_layer = args[0], args[1]
 
     def compile(self,
                 optimizer="rmsprop",
@@ -23,14 +24,3 @@ class YOLO(tf.keras.models.Model):
             weighted_metrics=weighted_metrics,
             run_eagerly=run_eagerly,
             **kwargs)
-
-    def call(self, inputs, training=None, mask=None):
-        if training is None or training == True:
-            return inputs
-        elif training == False:
-            return tf.sigmoid(inputs)
-        else:
-            raise TypeError(f"The type of argument 'training' must be bool or None: {training}")
-
-    def __call__(self, *args, **kwargs):
-        return args

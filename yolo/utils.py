@@ -40,7 +40,7 @@ def nms(bboxes: [[[int, int, int, int]]], iou_threshold: float = .45) -> [[int, 
     return non_max_suppression(bboxes, iou_threshold)
 
 
-def aaaa(y_true: [[int, int, int, int, int]], y_pred: [[int, int, int, int, int]], iou_threshold: float = .45):
+def confusion_matrix(y_true: [[int, int, int, int, int]], y_pred: [[int, int, int, int, int]], iou_threshold: float = .45):
     tp, fp, tn, fn = 0, 0, 0, 0
     for y_true_bbox in y_true:
         for y_pred_bbox in y_pred:
