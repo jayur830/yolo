@@ -64,13 +64,27 @@ class YOLODataset:
         x_data, y_data = data[0], data[1]
         indexes = np.arange(len(x_data))
         np.random.shuffle(indexes)
-        x_data, y_data = np.asarray([d.astype(np.float) for d in x_data[indexes]]), np.asarray([d.astype(np.float) for d in y_data[indexes]])
+        x_data, y_data = \
+            np.asarray([d.astype(np.float) for d in x_data[indexes]]), \
+            np.asarray([d.astype(np.float) for d in y_data[indexes]])
+
+        # for i in range(x_data.shape[0]):
+        #     img = x_data[i].copy()
+        #     for x1, y1, x2, y2 in self.convert(y_data[i].reshape((1,) + y_data[i].shape), self.target_size, self.grid_size):
+        #         img = cv2.rectangle(
+        #             img=img,
+        #             pt1=(x1, y1),
+        #             pt2=(x2, y2),
+        #             color=(0, 0, 255),
+        #             thickness=2)
+        #     cv2.imshow("view", img)
+        #     cv2.waitKey()
 
         return classes, \
-               x_data[int(x_data.shape[0] * test_split):], \
-               y_data[int(y_data.shape[0] * test_split):], \
-               x_data[:int(x_data.shape[0] * test_split)], \
-               y_data[:int(y_data.shape[0] * test_split)]
+            x_data[int(x_data.shape[0] * test_split):] / 255., \
+            y_data[int(y_data.shape[0] * test_split):], \
+            x_data[:int(x_data.shape[0] * test_split)] / 255., \
+            y_data[:int(y_data.shape[0] * test_split)]
 
     def __to_yolo_format(self, grid_width: int, grid_height: int, x: float, y: float, w: float, h: float):
         grid_x, grid_y = int(x * grid_width), int(y * grid_height)

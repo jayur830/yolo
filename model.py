@@ -49,13 +49,16 @@ def model(
     x = tf.keras.layers.Activation(tf.keras.activations.linear)(x)
 
     yolo = YOLO(input_layer, x)
+    # yolo.compile(
+    #     optimizer=tf.optimizers.SGD(
+    #         learning_rate=learning_rate,
+    #         momentum=.9,
+    #         nesterov=True),
+    #     loss="sse",
+    #     metrics=[Recall()])
     yolo.compile(
-        optimizer=tf.optimizers.SGD(
-            learning_rate=learning_rate,
-            momentum=.9,
-            nesterov=True),
-        loss="sse")
-        # metrics=[Recall()])
+        optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
+        metrics=[Recall(classes_len)])
     yolo.summary()
 
     return yolo
