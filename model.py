@@ -50,15 +50,11 @@ def model(
 
     yolo = YOLO(input_layer, x)
     # yolo.compile(
-    #     optimizer=tf.optimizers.SGD(
-    #         learning_rate=learning_rate,
-    #         momentum=.9,
-    #         nesterov=True),
-    #     loss="sse",
-    #     metrics=[Recall()])
+    #     optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
+    #     metrics=[Recall(classes_len)])
     yolo.compile(
         optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
-        metrics=[Recall(classes_len)])
+        iou_logits=False)
     yolo.summary()
 
     return yolo

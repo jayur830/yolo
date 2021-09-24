@@ -13,8 +13,8 @@ if __name__ == "__main__":
     dataset = YOLODataset(
         target_size=(128, 512),
         grid_size=(16, 64))
-    # classes, x_train, y_train, x_test, y_test = dataset.flow_from_directory(directory="D:/Dataset/loon_rpn_split")
-    classes, x_train, y_train, x_test, y_test = dataset.flow_from_directory(directory="D:/Dataset/image/loon_rpn_split")
+    classes, x_train, y_train, x_test, y_test = dataset.flow_from_directory(directory="D:/Dataset/loon_rpn_split")
+    # classes, x_train, y_train, x_test, y_test = dataset.flow_from_directory(directory="D:/Dataset/image/loon_rpn_split")
 
     yolo = model(len(classes), learning_rate=1e-4)
 

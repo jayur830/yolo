@@ -11,6 +11,9 @@ class YOLO(tf.keras.models.Model):
     def compile(self,
                 optimizer="rmsprop",
                 loss="sse",
+                iou_logits=False,
+                lambda_coord=5.,
+                lambda_noobj=.5,
                 metrics=None,
                 loss_weights=None,
                 weighted_metrics=None,
@@ -18,7 +21,7 @@ class YOLO(tf.keras.models.Model):
                 **kwargs):
         super(YOLO, self).compile(
             optimizer=optimizer,
-            loss=YOLOLoss(loss),
+            loss=YOLOLoss(loss, iou_logits, lambda_coord, lambda_noobj),
             metrics=metrics,
             loss_weights=loss_weights,
             weighted_metrics=weighted_metrics,

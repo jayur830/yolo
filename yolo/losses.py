@@ -6,6 +6,7 @@ from tensorflow.python.framework.ops import convert_to_tensor_v2
 class YOLOLoss(tf.keras.losses.Loss):
     def __init__(self,
                  loss,
+                 iou_logits: bool = False,
                  lambda_coord: float = 5.,
                  lambda_noobj: float = .5):
         super(YOLOLoss, self).__init__()
@@ -36,6 +37,7 @@ class YOLOLoss(tf.keras.losses.Loss):
                 raise ValueError(f"Could not interpret loss function identifier: {loss}")
 
         self.__loss = loss
+        self.__iou_logits = iou_logits
         self.__lambda_coord = lambda_coord
         self.__lambda_noobj = lambda_noobj
         self.__conf_true = None
@@ -45,7 +47,7 @@ class YOLOLoss(tf.keras.losses.Loss):
         y_true = tf.cast(y_true, y_pred.dtype)
         self.__conf_true = y_true[:, :, :, 4]
 
-        return self.__localization_loss(y_true, y_pred) + \
+        return self.__iou_loss(y_true, y_pred) if self.__iou_logits else self.__localization_loss(y_true, y_pred) + \
             self.__confidence_loss(y_true, y_pred) + \
             self.__classification_loss(y_true, y_pred)
 
@@ -60,6 +62,40 @@ class YOLOLoss(tf.keras.losses.Loss):
             self.__conf_true)
         return xy_loss + wh_loss
 
+    def __iou_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor):
+        bbox_true = y_true[:, :, :, :4]
+        bbox_pred = y_pred[:, :, :, :4]
+        shape = tf.shape(bbox_true)
+
+        cx = tf.repeat(tf.expand_dims(tf.range(shape[2], dtype=tf.float32), axis=0), shape[1], axis=0)
+        cy = tf.repeat(tf.expand_dims(tf.range(shape[1], dtype=tf.float32), axis=-1), shape[2], axis=-1)
+
+        bbox_true_area = bbox_true[:, :, :, 2] * bbox_true[:, :, :, 3]
+        bbox_pred_area = bbox_pred[:, :, :, 2] * bbox_pred[:, :, :, 3]
+
+        min_x2 = tf.minimum(
+            cx + bbox_true[:, :, :, 0] + bbox_true[:, :, :, 2] * shape[2] / 2.,
+            cx + bbox_pred[:, :, :, 0] + bbox_pred[:, :, :, 2] * shape[2] / 2.)
+        max_x1 = tf.maximum(
+            cx + bbox_true[:, :, :, 0] - bbox_true[:, :, :, 2] * shape[2] / 2.,
+            cx + bbox_pred[:, :, :, 0] - bbox_pred[:, :, :, 2] * shape[2] / 2.)
+        min_y2 = tf.minimum(
+            cy + bbox_true[:, :, :, 1] + bbox_true[:, :, :, 3] * shape[1] / 2.,
+            cy + bbox_pred[:, :, :, 1] + bbox_pred[:, :, :, 3] * shape[1] / 2.)
+        max_y1 = tf.maximum(
+            cy + bbox_true[:, :, :, 1] - bbox_true[:, :, :, 3] * shape[1] / 2.,
+            cy + bbox_pred[:, :, :, 1] - bbox_pred[:, :, :, 3] * shape[1] / 2.)
+
+        intersection_width = min_x2 - max_x1
+        intersection_height = min_y2 - max_y1
+
+        intersection = intersection_width * intersection_height
+        union = bbox_true_area + bbox_pred_area - intersection
+        union += tf.cast(tf.logical_not(tf.cast(union, dtype=tf.bool)), dtype=tf.float32) * 1e-7
+
+        iou = intersection / union
+
+        return tf.reduce_sum(1. - iou)
 
     def __confidence_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor):
         return self.__loss(
